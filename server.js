@@ -8,16 +8,6 @@ const jsonfile = require('jsonfile');
 
 var file = 'data.json'
 var data = jsonfile.readFileSync(file);
-console.log(data);
-
-//data.rooms.test.units.push({"name": "p2", "value": "zero"});
-
-//jsonfile.writeFile(file, data, function (err) {
-//  console.error(err);
-//})
-
-var clients = {};
-var rooms = {};
 
 const server = express()
   .use(express.static(path.join(__dirname, 'client')))
@@ -25,37 +15,39 @@ const server = express()
 
 const wss = new SocketServer({ server });
 
-wss.on('connection', (ws) => {
-  console.log('Client connected');
-  var id = Math.random();
-  clients[id] = ws;
+wss.on('connection', function connection(ws) {
+    ws.room = '';
+    ws.send("User Joined");
 
-  ws.on('message', function(message) {
-      console.log('получено сообщение ' + message);
-      if (message.room) {
-        for (var key in clients) {
-          if (clients[key] &&
-            clients[key].room &&
-            clients[key].room === message.room) {
-              clients[key].send(room);
-          }
+    ws.on('message', function(message) {
+      //  message = JSON.parse(message);
+        if (message.join) {
+            ws.room = message.join;
         }
-      }
-  });
 
-  ws.on('joinRoom', function(message) {
-      console.log('получено сообщение ' + message);
-      rooms[message.room].clients.push(id);
-  });
+        if (message.room) {
+            broadcast(message);
+        }
 
-  ws.on('close', () => delete clients[id]);
+        if (message.data) {
+            console.log("Server got: " + message.data);
+        }
+    });
+
+    ws.on('error', function(er) {
+        console.log(er);
+    })
+
+
+    ws.on('close', function() {
+        console.log('Connection closed')
+    })
 });
 
-
-
-
-
-//client.on('data', function(data) {
-//	console.log('Received: ' + data);
-//	client.destroy(); // kill client after server's response
-//});
+function broadcast(message) {
+    wss.clients.forEach(function each(client) {
+        if (client.room === message.room) {
+            client.send(message.data);
+        }
+    });
+}
