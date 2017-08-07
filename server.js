@@ -1,5 +1,5 @@
 'use strict';
-
+const  _ = require('lodash');
 const express = require('express');
 const SocketServer = require('ws').Server;
 const path = require('path');
@@ -15,19 +15,32 @@ const server = express()
 
 const wss = new SocketServer({ server });
 
+const rooms = {};
+
 wss.on('connection', function connection(ws) {
     ws.room = '';
     ws.send("User Joined");
 
     ws.on('message', function(messageStr) {
       const message = JSON.parse(messageStr);
-     console.log(message);
-        if (message.join) {
-            ws.room = message.join;
+
+        if (message.join && message.room) {
+            ws.room = message.room;
+            if (ws.host) {
+              ws.host = true;
+            } else {
+              const room = rooms[room];
+              const data = room.data;
+              data && ws.send(JSON.stringify(data) || '"empty": true')
+            }
         }
-console.log(message.room)
-        if (message.room) {
-            broadcast(message);
+
+        if (message.room && message.data) {
+            broadcastUpdate(message);
+        }
+
+        if (message.room && message.delete) {
+            broadcastDelete(message);
         }
 
         if (message.data) {
@@ -45,10 +58,18 @@ console.log(message.room)
     })
 });
 
-function broadcast(message) {
+//рассылаем стейт
+function broadcastUpdate(message) {
+  const room = rooms[message.room];
+  let data = room.data;
+  _.merge(data, message.data)
     wss.clients.forEach(function each(client) {
         if (client.room === message.room) {
-            client.send(message.data);
+            client.send(data);
         }
     });
+}
+
+function broadcastDelete(message) {
+
 }
