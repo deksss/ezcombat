@@ -19,12 +19,13 @@ wss.on('connection', function connection(ws) {
     ws.room = '';
     ws.send("User Joined");
 
-    ws.on('message', function(message) {
-      //  message = JSON.parse(message);
+    ws.on('message', function(messageStr) {
+      const message = JSON.parse(messageStr);
+     console.log(message);
         if (message.join) {
             ws.room = message.join;
         }
-
+console.log(message.room)
         if (message.room) {
             broadcast(message);
         }
