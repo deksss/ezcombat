@@ -30,19 +30,23 @@ wss.on('connection', function connection(ws) {
               rooms[message.room] = {};
               ws.host = true;
             } else {
-              const room = rooms[message.room];
-              const data = room && room.data;
+              const data = rooms[message.room];
               data && ws.send(JSON.stringify(data) || '{"empty": true}')
             }
         }
 
-        if (message.room && message.data) {
+        if (message.room && message.data && message.type === 'update') {
             broadcastUpdate(message);
         }
 
-        if (message.room && message.delete) {
+        if (message.room && message.data && message.type === 'delete') {
             broadcastDelete(message);
         }
+
+        if (message.room && message.data && message.type === 'action') {
+            broadcastAction(message);
+        }
+
 
         if (message.data) {
             console.log("Server got: ");
@@ -69,6 +73,14 @@ function broadcastUpdate(message) {
 
   _.merge(data, message.data);
   rooms[message.room] = data;
+    wss.clients.forEach(function each(client) {
+        if (client.room === message.room) {
+            client.send(JSON.stringify(data));
+        }
+    });
+}
+
+function broadcastAction(message) {
     wss.clients.forEach(function each(client) {
         if (client.room === message.room) {
             client.send(JSON.stringify(data));

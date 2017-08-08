@@ -18,10 +18,10 @@ ws.onmessage = function(msg) {
 first client:
 ws.send(JSON.stringify({"join": true, "host": true, "room": "my"}))
 
-ws.send(JSON.stringify({"room": "my", "data": {name: "lol"}}))
+ws.send(JSON.stringify({"room": "my", "data": {name: "lol"}, type: "update"}))
 
 second client:
 ws.send(JSON.stringify({"join": true, "room": "my"}))
 
 first client:
-ws.send(JSON.stringify({"room": "my", "data": {name: "lol2", num: 2}}))
+ws.send(JSON.stringify({"room": "my", "data": {name: "lol2", num: 2}, type: "update"}))
