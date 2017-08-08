@@ -27,11 +27,12 @@ wss.on('connection', function connection(ws) {
         if (message.join && message.room) {
             ws.room = message.room;
             if (ws.host) {
+              rooms[message.room] = {};
               ws.host = true;
             } else {
-              const room = rooms[room];
-              const data = room.data;
-              data && ws.send(JSON.stringify(data) || '"empty": true')
+              const room = rooms[message.room];
+              const data = room && room.data;
+              data && ws.send(JSON.stringify(data) || '{"empty": true}')
             }
         }
 
@@ -44,7 +45,9 @@ wss.on('connection', function connection(ws) {
         }
 
         if (message.data) {
-            console.log("Server got: " + message.data);
+            console.log("Server got: ");
+            console.log(message.data);
+            console.log("<-___.__.___.__-----.-----___.___.___->");
         }
     });
 
@@ -60,12 +63,15 @@ wss.on('connection', function connection(ws) {
 
 //рассылаем стейт
 function broadcastUpdate(message) {
-  const room = rooms[message.room];
-  let data = room.data;
-  _.merge(data, message.data)
+  const data = rooms[message.room] || {};
+  console.log('rooms:');
+  console.log(rooms);
+
+  _.merge(data, message.data);
+  rooms[message.room] = data;
     wss.clients.forEach(function each(client) {
         if (client.room === message.room) {
-            client.send(data);
+            client.send(JSON.stringify(data));
         }
     });
 }
