@@ -21,7 +21,10 @@ wss.on('connection', function connection(ws) {
     ws.room = '';
 
     ws.on('message', function(messageStr) {
-      const message = JSON.parse(messageStr);
+      if (messageStr === 'pong') {
+        setTimeOut(() => ws.send('ping'), 29000 )
+      } else {
+        const message = JSON.parse(messageStr);
 
         if (message.join && message.room) {
             ws.room = message.room;
@@ -41,6 +44,9 @@ wss.on('connection', function connection(ws) {
         if (message.room && message.data && message.type === 'delete') {
             broadcastDelete(message);
         }
+      }
+
+
 
     });
 
@@ -52,6 +58,9 @@ wss.on('connection', function connection(ws) {
     ws.on('close', function() {
         console.log('Connection closed')
     })
+
+    ws.send('ping');
+
 });
 
 //рассылаем стейт
