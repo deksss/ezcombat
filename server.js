@@ -19,7 +19,6 @@ const rooms = {};
 
 wss.on('connection', function connection(ws) {
     ws.room = '';
-    ws.send("User Joined");
 
     ws.on('message', function(messageStr) {
       const message = JSON.parse(messageStr);
@@ -43,16 +42,6 @@ wss.on('connection', function connection(ws) {
             broadcastDelete(message);
         }
 
-        if (message.room && message.data && message.type === 'action') {
-            broadcastAction(message);
-        }
-
-
-        if (message.data) {
-            console.log("Server got: ");
-            console.log(message.data);
-            console.log("<-___.__.___.__-----.-----___.___.___->");
-        }
     });
 
     ws.on('error', function(er) {
@@ -82,7 +71,7 @@ function broadcastUpdate(message) {
 
 function broadcastAction(message) {
     wss.clients.forEach(function each(client) {
-        if (client.room === message.room) {
+        if (client.room === message.room && !client.host) {
             client.send(JSON.stringify(data));
         }
     });
