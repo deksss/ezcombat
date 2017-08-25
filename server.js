@@ -70,19 +70,18 @@ function broadcastUpdate(message) {
   rooms[message.room] = data;
   data.room = message.room;
     wss.clients.forEach(function each(client) {
-      console.log(client)
         if (client.room === message.room && !client.host ) {
+          try {
             client.send(JSON.stringify(data));
+          } catch(e) {
+            console.log(e)
+          }
         }
     });
 }
 
 function broadcastAction(message) {
-    wss.clients.forEach(function each(client) {
-        if (client.room === message.room && !client.host) {
-            client.send(JSON.stringify(data));
-        }
-    });
+
 }
 
 function broadcastDelete(message) {
