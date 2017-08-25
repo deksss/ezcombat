@@ -25,10 +25,9 @@ wss.on('connection', function connection(ws) {
         setTimeout(() => ws.send('ping'), 29000 )
       } else {
         const message = JSON.parse(messageStr);
-console.log(messageStr)
         if (message.join && message.room) {
             ws.room = message.room;
-            if (ws.host) {
+            if (message.host) {
               rooms[message.room] = {};
               ws.host = true;
             } else {
@@ -66,8 +65,6 @@ console.log(messageStr)
 //рассылаем стейт
 function broadcastUpdate(message) {
   const data = rooms[message.room] || {};
-  console.log('rooms:');
-  console.log(rooms);
 
   _.merge(data, message.data);
   rooms[message.room] = data;
