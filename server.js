@@ -21,14 +21,13 @@ wss.on('connection', function connection(ws) {
     ws.room = '';
 
     ws.on('message', function(messageStr) {
-      if (messageStr === 'pong') {
+      if (messageStr === 'pong' && ws.readyState === 1) {
         setTimeout(() => ws.send('ping'), 29000 )
       } else {
         const message = JSON.parse(messageStr);
         if (message.join && message.room) {
             ws.room = message.room;
             if (message.host) {
-              rooms[message.room] = {};
               ws.host = true;
             } else {
               const data = rooms[message.room];
