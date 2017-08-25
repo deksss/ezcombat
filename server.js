@@ -64,9 +64,9 @@ wss.on('connection', function connection(ws) {
 
 //рассылаем стейт
 function broadcastUpdate(message) {
-  const data = rooms[message.room] || {};
+  const data = message.data || rooms[message.room] || {};
 
-  _.merge(data, message.data);
+  //_.merge(data, message.data);
   rooms[message.room] = data;
   data.room = message.room;
     wss.clients.forEach(function each(client) {
