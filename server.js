@@ -22,7 +22,11 @@ wss.on('connection', function connection(ws) {
 
     ws.on('message', function(messageStr) {
       if (messageStr === 'pong' && ws.readyState === 1) {
-        setTimeout(() => ws.send('ping'), 29000 )
+        setTimeout(() => {
+          if (ws.readyState === 1) {
+            ws.send('ping');
+          }
+        }, 29000 )
       } else {
         const message = JSON.parse(messageStr);
         if (message.join && message.room) {
