@@ -31,6 +31,7 @@ wss.on('connection', function connection(ws) {
         const message = JSON.parse(messageStr);
         if (message.join && message.room) {
             ws.room = message.room;
+            ws.id = Math.round(Date.now() / Math.floor(Math.random() * 1000));
             if (message.host) {
               ws.host = true;
             } else {
@@ -40,7 +41,11 @@ wss.on('connection', function connection(ws) {
         }
 
         if (message.room && message.data && message.type === 'update') {
-            broadcastUpdate(message);
+            broadcastUpdate(message, ws);
+        }
+
+        if (message.room && message.action && message.type === 'action') {
+            sendActionToHost(message);
         }
 
         if (message.room && message.data && message.type === 'delete') {
@@ -65,14 +70,13 @@ wss.on('connection', function connection(ws) {
 });
 
 //рассылаем стейт
-function broadcastUpdate(message) {
+function broadcastUpdate(message, ws) {
   const data = message.data || rooms[message.room] || {};
-
   //_.merge(data, message.data);
   rooms[message.room] = data;
   data.room = message.room;
     wss.clients.forEach(function each(client) {
-        if (client.room === message.room && !client.host ) {
+        if (client.room === message.room && ws.id !==  client.id) {
           try {
             client.send(JSON.stringify(data));
           } catch(e) {
@@ -80,6 +84,23 @@ function broadcastUpdate(message) {
           }
         }
     });
+}
+
+function sendActionToHost (message) {
+  console.log(message)
+  const action = message.action;
+  if (message.room) {
+    wss.clients.forEach(function each(client) {
+     if (client.room === message.room && client.host) {
+       try {
+         console.log({remote: true, action: action.data})
+         client.send(JSON.stringify({remote: true, action: action.data}));
+       } catch(e) {
+         console.log(e)
+       }
+     }
+    });
+  }
 }
 
 function broadcastAction(message) {
