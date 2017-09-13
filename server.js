@@ -1,72 +1,73 @@
-'use strict';
-const  _ = require('lodash');
-const express = require('express');
-const SocketServer = require('ws').Server;
-const path = require('path');
+"use strict";
+const _ = require("lodash");
+const express = require("express");
+const SocketServer = require("ws").Server;
+const path = require("path");
 const PORT = process.env.PORT || 3000;
-const jsonfile = require('jsonfile');
+const jsonfile = require("jsonfile");
 
-var file = 'data.json'
+var file = "data.json";
 var data = jsonfile.readFileSync(file);
 
 const server = express()
-  .use(express.static(path.join(__dirname, 'client')))
-  .listen(PORT, () => console.log(`Listening on ${ PORT }`));
+  .use(express.static(path.join(__dirname, "client")))
+  .get("*", (req, res) => {
+      res.sendFile(path.resolve(__dirname, "client", "index.html"));
+    })
+  .listen(PORT, () => console.log(`Listening on ${PORT}`));
+
+
 
 const wss = new SocketServer({ server });
 
 const rooms = {};
 
-wss.on('connection', function connection(ws) {
-    ws.room = '';
+wss.on("connection", function connection(ws) {
+  ws.room = "";
 
-    ws.on('message', function(messageStr) {
-      if (messageStr === 'pong' && ws.readyState === 1) {
-        setTimeout(() => {
-          if (ws.readyState === 1) {
-            ws.send('ping');
-          }
-        }, 29000 )
-      } else {
-        const message = JSON.parse(messageStr);
-        if (message.join && message.room) {
-            ws.room = message.room;
-            ws.id = Math.round(Date.now() / Math.floor(Math.random() * 1000));
-            if (message.host) {
-              ws.host = true;
-            } else {
-              const data = rooms[message.room];
-              data && ws.send(JSON.stringify(data) || '{"empty": true}')
-            }
+  ws.on("message", function(messageStr) {
+    if (messageStr === "pong" && ws.readyState === 1) {
+      setTimeout(() => {
+        if (ws.readyState === 1) {
+          ws.send("ping");
         }
-
-        if (message.room && message.data && message.type === 'update') {
-            broadcastUpdate(message, ws);
-        }
-
-        if (message.room && message.action && message.type === 'action') {
-            sendActionToHost(message);
-        }
-
-        if (message.room && message.data && message.type === 'delete') {
-            broadcastDelete(message);
+      }, 29000);
+    } else {
+      const message = JSON.parse(messageStr);
+      if (message.join && message.room) {
+        ws.room = message.room;
+        ws.id = Math.round(Date.now() / Math.floor(Math.random() * 1000));
+        if (message.host) {
+          ws.host = true;
+        } else {
+          const data = rooms[message.room];
+          data && ws.send(JSON.stringify(data) || '{"empty": true}');
         }
       }
 
+      if (message.room && message.data && message.type === "update") {
+        broadcastUpdate(message, ws);
+      }
 
-    });
+      if (message.room && message.action && message.type === "action") {
+        sendActionToHost(message);
+      }
 
-    ws.on('error', function(er) {
-        console.log(er);
-    })
+      if (message.room && message.data && message.type === "delete") {
+        broadcastDelete(message);
+      }
+    }
+  });
 
+  ws.on("error", function(er) {
+    console.log(er);
+  });
 
-    ws.on('close', function() {
-        console.log('Connection closed')
-    })
+  ws.on("close", function() {
+    console.log("Connection closed");
+  });
 
-    ws.send('ping');
-
+  ws.send("ping");
 });
 
 //рассылаем стейт
@@ -75,38 +76,34 @@ function broadcastUpdate(message, ws) {
   //_.merge(data, message.data);
   rooms[message.room] = data;
   data.room = message.room;
-    wss.clients.forEach(function each(client) {
-        if (client.room === message.room && ws.id !==  client.id) {
-          try {
-            client.send(JSON.stringify(data));
-          } catch(e) {
-            console.log(e)
-          }
-        }
-    });
+  wss.clients.forEach(function each(client) {
+    if (client.room === message.room && ws.id !== client.id) {
+      try {
+        client.send(JSON.stringify(data));
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  });
 }
 
-function sendActionToHost (message) {
-  console.log(message)
+function sendActionToHost(message) {
+  console.log(message);
   const action = message.action;
   if (message.room) {
     wss.clients.forEach(function each(client) {
-     if (client.room === message.room && client.host) {
-       try {
-         console.log({remote: true, action: action.data})
-         client.send(JSON.stringify({remote: true, action: action.data}));
-       } catch(e) {
-         console.log(e)
-       }
-     }
+      if (client.room === message.room && client.host) {
+        try {
+          console.log({ remote: true, action: action.data });
+          client.send(JSON.stringify({ remote: true, action: action.data }));
+        } catch (e) {
+          console.log(e);
+        }
+      }
     });
   }
 }
 
-function broadcastAction(message) {
+function broadcastAction(message) {}
 
-}
-
-function broadcastDelete(message) {
-
-}
+function broadcastDelete(message) {}
