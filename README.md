@@ -1,7 +1,7 @@
 # ezcombat
-Light Combat Tracker for custom bg
+Server for EZCombat
 
-client API:
+old API:
 
 var data = {};
 var HOST = location.origin.replace(/^http/, 'ws')

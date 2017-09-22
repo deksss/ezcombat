@@ -12,11 +12,9 @@ var data = jsonfile.readFileSync(file);
 const server = express()
   .use(express.static(path.join(__dirname, "client")))
   .get("*", (req, res) => {
-      res.sendFile(path.resolve(__dirname, "client", "index.html"));
-    })
+    res.sendFile(path.resolve(__dirname, "client", "index.html"));
+  })
   .listen(PORT, () => console.log(`Listening on ${PORT}`));
-
-
 
 const wss = new SocketServer({ server });
 
@@ -36,12 +34,15 @@ wss.on("connection", function connection(ws) {
       const message = JSON.parse(messageStr);
       if (message.join && message.room) {
         ws.room = message.room;
+        ws.name = message.name;
         ws.id = Math.round(Date.now() / Math.floor(Math.random() * 1000));
         if (message.host) {
+          console.log("host connect");
           ws.host = true;
         } else {
-          const data = rooms[message.room];
-          data && ws.send(JSON.stringify(data) || '{"empty": true}');
+          sendGetRequestToHost(Object.assign({}, ws));
+          //const data = rooms[message.room];
+          //data && ws.send(JSON.stringify(data) || '{"empty": true}');
         }
       }
 
@@ -49,12 +50,20 @@ wss.on("connection", function connection(ws) {
         broadcastUpdate(message, ws);
       }
 
+      if (message.room && message.data && message.type === "data_for_client") {
+        clientUpdate(message, ws);
+      }
+
       if (message.room && message.action && message.type === "action") {
-        sendActionToHost(message);
+        sendActionToAll(message, ws);
       }
 
       if (message.room && message.data && message.type === "delete") {
         broadcastDelete(message);
+      }
+
+      if (message.room && message.action && message.type === "get_data") {
+        sendGetRequestToHost(message);
       }
     }
   });
@@ -70,7 +79,37 @@ wss.on("connection", function connection(ws) {
   ws.send("ping");
 });
 
-//рассылаем стейт
+function sendGetRequestToHost(ws) {
+  console.log("send req get all");
+  console.log(ws);
+  var id = ws.id;
+  var room = ws.room;
+  wss.clients.forEach(function(client) {
+    if (client.room === ws.room && client.host) {
+      try {
+        client.send(JSON.stringify({ getAll: true, wsId: id }));
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  });
+}
+
+function clientUpdate(message) {
+  console.log("client update");
+  const data = message.data || {};
+  console.log(data);
+  wss.clients.forEach(function(client) {
+    if ((client.id === message.wsId)) {
+      try {
+        client.send(JSON.stringify(Object.assign({}, data, {update: true})));
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  });
+}
+
 function broadcastUpdate(message, ws) {
   const data = message.data || rooms[message.room] || {};
   //_.merge(data, message.data);
@@ -87,6 +126,7 @@ function broadcastUpdate(message, ws) {
   });
 }
 
+//old
 function sendActionToHost(message) {
   console.log(message);
   const action = message.action;
@@ -96,6 +136,25 @@ function sendActionToHost(message) {
         try {
           console.log({ remote: true, action: action.data });
           client.send(JSON.stringify({ remote: true, action: action.data }));
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    });
+  }
+}
+
+function sendActionToAll(message, ws) {
+  console.log("sendActionToAll");
+  console.log(ws.id)
+  console.log(message);
+  if (message.room) {
+    wss.clients.forEach(function each(client) {
+        console.log(client.id)
+      if (client.room === message.room && client.id !== ws.id) {
+        try {
+          console.log('send to:' +  client.id)
+          client.send(JSON.stringify({ remote: true, action: message.action }));
         } catch (e) {
           console.log(e);
         }
