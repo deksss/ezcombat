@@ -1,5 +1,4 @@
 "use strict";
-const _ = require("lodash");
 const express = require("express");
 const SocketServer = require("ws").Server;
 const path = require("path");
