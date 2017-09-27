@@ -4,12 +4,10 @@ const express = require("express");
 const SocketServer = require("ws").Server;
 const path = require("path");
 const PORT = process.env.PORT || 3000;
-const jsonfile = require("jsonfile");
-
-var file = "data.json";
-var data = jsonfile.readFileSync(file);
+const compression = require("compression");
 
 const server = express()
+  .use(compression())
   .use(express.static(path.join(__dirname, "client")))
   .get("*", (req, res) => {
     res.sendFile(path.resolve(__dirname, "client", "index.html"));
@@ -100,9 +98,9 @@ function clientUpdate(message) {
   const data = message.data || {};
   console.log(data);
   wss.clients.forEach(function(client) {
-    if ((client.id === message.wsId)) {
+    if (client.id === message.wsId) {
       try {
-        client.send(JSON.stringify(Object.assign({}, data, {update: true})));
+        client.send(JSON.stringify(Object.assign({}, data, { update: true })));
       } catch (e) {
         console.log(e);
       }
@@ -146,14 +144,14 @@ function sendActionToHost(message) {
 
 function sendActionToAll(message, ws) {
   console.log("sendActionToAll");
-  console.log(ws.id)
+  console.log(ws.id);
   console.log(message);
   if (message.room) {
     wss.clients.forEach(function each(client) {
-        console.log(client.id)
+      console.log(client.id);
       if (client.room === message.room && client.id !== ws.id) {
         try {
-          console.log('send to:' +  client.id)
+          console.log("send to:" + client.id);
           client.send(JSON.stringify({ remote: true, action: message.action }));
         } catch (e) {
           console.log(e);
